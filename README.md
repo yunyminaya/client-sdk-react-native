@@ -18,6 +18,41 @@ Use this SDK to add realtime video, audio and data features to your React Native
 > This is v2 of the React-Native SDK. When migrating from v1.x to v2.x you might encounter a small set of breaking changes.
 > Read the [migration guide](https://docs.livekit.io/recipes/migrate-from-v1/) for a detailed overview of what has changed.
 
+<!--BEGIN_AGENTS_INFO-->
+> [!IMPORTANT]
+> If you're building Voice AI, [LiveKit Agents](https://github.com/livekit/agents) is the SDK for code-first realtime voice agents. STT, LLM, TTS, turn detection, [expressive speech](https://docs.livekit.io/agents/models/tts/expressive/), [keyterm accuracy](https://docs.livekit.io/agents/models/stt/keyterms/), tool usage, and telephony all come bundled in the framework. It's available in both [Python](https://github.com/livekit/agents) and [Node.js](https://github.com/livekit/agents-js).
+>
+> ```python
+> # agent.py
+> from livekit import agents
+> from livekit.agents import Agent, AgentServer, AgentSession, STTContextOptions, TurnHandlingOptions, inference
+>
+> server = AgentServer()
+>
+>
+> @server.rtc_session(agent_name="my-agent")
+> async def my_agent(ctx: agents.JobContext):
+>     session = AgentSession(
+>         stt=inference.STT(model="deepgram/nova-3", language="multi"),
+>         llm=inference.LLM(model="google/gemma-4-31b-it"),
+>         tts=inference.TTS(model="inworld/inworld-tts-2", voice="Ashley"),
+>         turn_handling=TurnHandlingOptions(turn_detection=inference.TurnDetector()),
+>         stt_context_options=STTContextOptions(keyterms=["LiveKit", "Acme Corp"]),
+>         expressive=True,
+>     )
+>     await session.start(room=ctx.room, agent=Agent(instructions="You are a helpful voice AI assistant."))
+>     await session.generate_reply(instructions="Greet the user and offer your assistance.")
+>
+>
+> if __name__ == "__main__":
+>     agents.cli.run_app(server)
+> ```
+>
+> Models come from [LiveKit Inference](https://docs.livekit.io/agents/models/) with no per-provider API keys, and LiveKit Cloud handles [deployment](https://docs.livekit.io/deploy/agents/) and [observability](https://docs.livekit.io/deploy/observability/). Visit the docs for more info at [docs.livekit.io/agents](https://docs.livekit.io/agents/).
+>
+> Using a coding agent? Install the LiveKit skill with `npx skills add livekit/agent-skills` and add the docs MCP at `https://docs.livekit.io/mcp/` (see [coding agent support](https://docs.livekit.io/intro/coding-agents/)).
+<!--END_AGENTS_INFO-->
+
 ## Installation
 
 ### NPM
@@ -36,6 +71,22 @@ This library depends on `@livekit/react-native-webrtc`, which has additional ins
 
 - [iOS Installation Guide](https://github.com/livekit/react-native-webrtc/blob/master/Documentation/iOSInstallation.md)
 - [Android Installation Guide](https://github.com/livekit/react-native-webrtc/blob/master/Documentation/AndroidInstallation.md)
+
+### iOS Podfile
+
+This package depends on the `LiveKitWebRTC` pod, which is published to the
+[livekit/podspecs](https://github.com/livekit/podspecs) spec repo and the CocoaPods trunk. The CocoaPods trunk stops accepting new pods on December 2, 2026, so later `LiveKitWebRTC` versions will only be available from livekit/podspecs. Add both sources to the top of your `ios/Podfile`:
+
+```ruby
+source 'https://github.com/livekit/podspecs.git'
+source 'https://cdn.cocoapods.org/'
+```
+
+Keep the `cdn.cocoapods.org` line: once a `Podfile` lists any `source`, CocoaPods stops using
+trunk by default, and your other pods still come from there.
+
+Expo users don't need to edit the `Podfile` by hand: version 1.1.0 and later of the
+[Expo plugin](https://github.com/livekit/client-sdk-react-native-expo-plugin) adds these sources during prebuild.
 
 ---
 
@@ -495,6 +546,20 @@ To fix this, you can either:
 
 - use another package manager, like npm
 - use [yarn-deduplicate](https://www.npmjs.com/package/yarn-deduplicate) to deduplicate dependencies
+
+#### CocoaPods could not find compatible versions for pod "LiveKitWebRTC"
+
+This usually happens after upgrading `@livekit/react-native-webrtc`. The error may also say the
+matching specs "required a higher minimum deployment target", which is misleading.
+
+Make sure both [Podfile sources](#ios-podfile) are in your `ios/Podfile`, then run:
+
+```sh
+cd ios && pod update LiveKitWebRTC
+```
+
+You may also see a `Found multiple specifications for LiveKitWebRTC` warning. It is harmless:
+some versions are published to both livekit/podspecs and CocoaPods trunk, and the two are identical.
 
 ## Contributing
 

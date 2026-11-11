@@ -16,6 +16,8 @@
         "java",
         "kotlin",
         "objc",
+        "python",
+        "ruby",
         "swift",
         "xml"
     ]
